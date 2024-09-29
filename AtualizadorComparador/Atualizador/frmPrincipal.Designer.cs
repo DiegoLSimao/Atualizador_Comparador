@@ -47,7 +47,7 @@
             // tmrListaExecucao
             // 
             tmrListaExecucao.Enabled = true;
-            tmrListaExecucao.Interval = 250;
+            tmrListaExecucao.Interval = 200;
             tmrListaExecucao.Tick += tmrListaExecucao_Tick;
             // 
             // frmPrincipal

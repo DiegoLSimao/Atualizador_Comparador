@@ -1,3 +1,4 @@
+using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 
@@ -9,6 +10,10 @@ namespace Atualizador
         private int Arquivos_Sobrescritos { get; set; }
         private int Arquivos_Identicos { get; set; }
         private int Arquivos_Novos { get; set; }
+        private int Pastas_Criadas { get; set; }
+        private int Pastas_Identicas { get; set; }
+        private int Numero_Linha { get; set; }
+        private bool Cancelar_Fechamento {  get; set; }
 
 
         public frmPrincipal()
@@ -25,8 +30,11 @@ namespace Atualizador
 
         public void EscreverStatus(string message)
         {
-            txtStatus.AppendText(string.Concat(message, Environment.NewLine));
+            
+            txtStatus.AppendText(string.Concat($"{Numero_Linha}: ",message, Environment.NewLine));
             txtStatus.ScrollToCaret();
+            Numero_Linha++;
+            Thread.Sleep(25);
         }
 
         private void tmrListaExecucao_Tick(object sender, EventArgs e)
@@ -48,6 +56,7 @@ namespace Atualizador
             {
                 case 0:
                     EscreverStatus("Inicio !");
+                    Cancelar_Fechamento = true;
                     Lista_Execucao++;
                     break;
 
@@ -67,10 +76,13 @@ namespace Atualizador
                     EscreverStatus($"Arquivos Sobrescritos: {Arquivos_Sobrescritos}");
                     EscreverStatus($"Arquivos Idênticos: {Arquivos_Identicos}");
                     EscreverStatus($"Arquivos Novos: {Arquivos_Novos}");
+                    EscreverStatus($"Pastas Criadas: {Pastas_Criadas}");
+                    EscreverStatus($"Pastas Identicas: {Pastas_Identicas}");
                     Lista_Execucao++;
                     break;
 
                 case 4:
+
                     tmrListaExecucao.Interval = 2000;
                     Lista_Execucao++;
                     break;
@@ -80,6 +92,7 @@ namespace Atualizador
                     EscreverStatus("--- Click em qualquer area branca para cancelar o fechamento automático ---");
                     EscreverStatus("");
                     EscreverStatus("Irá fechar em 3");
+                    Cancelar_Fechamento = false;
                     Lista_Execucao++;
                     break;
 
@@ -100,7 +113,10 @@ namespace Atualizador
                 default:
                     break;
             }
+ 
         }
+
+
 
 
         private void CompararDescompactar()
@@ -112,7 +128,7 @@ namespace Atualizador
             EscreverStatus($"Pasta para Descompactar: {extractPath}");
             EscreverStatus("- - - - - - - - - - - - - - - - - - - - -");
 
-            CompararArquivos compArquivo = new CompararArquivos();
+            CompararArquivos comparar = new CompararArquivos();
 
             // Extrair apenas arquivos que são diferentes ou não existentes
             using (ZipArchive archive = ZipFile.OpenRead(zipPath))
@@ -121,10 +137,29 @@ namespace Atualizador
                 {
                     string destinationPath = Path.Combine(extractPath, entry.FullName);
 
+                    // Verifica se a entrada é um diretório
+                    if (entry.FullName.EndsWith("/"))
+                    {
+                        // Cria a pasta, se necessário
+                        if (!Directory.Exists(destinationPath))
+                        {
+                            Directory.CreateDirectory(destinationPath);
+                            EscreverStatus($"Pasta criada: {destinationPath}");
+                            Pastas_Criadas++;
+                        }
+                        else
+                        {
+                            EscreverStatus($"Pasta já existente: {destinationPath}");
+                            Pastas_Identicas++;
+                        }
+                        continue; // Continuar pois não existe extração de pasta
+                    }
+
+                    // Verifica se entrada é um arquivo
                     if (File.Exists(destinationPath))
                     {
                         // Comparar o arquivo existente com o do ZIP
-                        if (!compArquivo.ArquivoIgual(entry, destinationPath))
+                        if (!comparar.ArquivoIgual(entry, destinationPath))
                         {
                             // Substituir o arquivo se forem diferentes
                             entry.ExtractToFile(destinationPath, true);
@@ -144,15 +179,20 @@ namespace Atualizador
                         EscreverStatus($"Novo arquivo extraído: {destinationPath}");
                         Arquivos_Novos++;
                     }
-                    Thread.Sleep(20);
+                    
                 }
             }
         }
 
         private void txtStatus_Click(object sender, EventArgs e)
         {
-            EscreverStatus("Encerramento Automático Cancelado");
-            tmrListaExecucao.Enabled = false;
+            if(!Cancelar_Fechamento)
+            {
+                EscreverStatus("Encerramento Automático Cancelado");
+                tmrListaExecucao.Enabled = false;
+                Cancelar_Fechamento = true;
+            }
+            
         }
     }
 }
