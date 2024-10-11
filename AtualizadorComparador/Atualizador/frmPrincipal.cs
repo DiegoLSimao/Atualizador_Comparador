@@ -121,8 +121,39 @@ namespace Atualizador
 
         private void CompararDescompactar()
         {
-            string zipPath = @"C:\Users\Diego\Desktop\Teste\Compactado\NF_EMITIDAS.zip";
-            string extractPath = @"C:\Users\Diego\Desktop\Teste\Descompactar";
+            string extractPath = AppDomain.CurrentDomain.BaseDirectory;
+            string zipPathOld = @"Y:\Softwares\Simulador Serial\Recent\ArquivosNovoAtualizador"; //Usado hoje
+            string zipPathNew = @"Y:\Softwares\Simulador Serial\Recent"; // Será usado no futuro
+            string zipPath = string.Empty;
+
+            //*** Verifica se unidade está disponível
+            DriveInfo drive = new DriveInfo(zipPathOld);
+            if(drive.IsReady)
+            {
+                //*** Verifica se utilizara pasta nova ou antiga
+                if (Directory.Exists(zipPathOld))
+                {
+                    // se existir pasta antiga ela serla usadada
+                    EscreverStatus($"Utilizando caminho antigo: {zipPathOld}");
+                    zipPath = zipPathOld;
+                }
+                else
+                {
+                    // Se não então usa a nova
+                    EscreverStatus($"Utilizando caminho novo: {zipPathNew}");
+                    zipPath = zipPathNew;
+                }
+            }
+            else
+            {
+                // Não permite avançar e joga para maquina de estado finalizar
+                EscreverStatus($"Falha: Unidade de rede não diponível => {drive.Name}");
+                Lista_Execucao = 3;
+                return;
+            }
+            
+
+
 
             EscreverStatus($"Arquivo Compactado: {zipPath}");
             EscreverStatus($"Pasta para Descompactar: {extractPath}");
